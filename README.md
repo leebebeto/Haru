@@ -1,2 +1,2 @@
-# Haru
-Machine Learning Proejct
+# Textsummarization
+Machine Learning Project
