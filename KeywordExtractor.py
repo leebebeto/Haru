@@ -93,23 +93,30 @@ class Ui_Form(object):
 
 		self.label_history.setText(self.text_history)
 
-
-
+		# if self.TF_IDF.isClicked():
+		# 	mode = "TF-IDF"
+		if self.SG.isClicked():
+			mode = "SG"
+		elif self.CBOW.isClicked():
+			mode = "CBOW"
+		else:
+			print("wrong mode")
 		# W = [W_emb, W_out]
 		# testwords = ["Obama", "senator", "white", "house", "battle"]
 		# for tw in testwords:
 		#     sim(tw,word2ind,ind2word,W_emb)
-		mode = "SG"
+		# mode = "SG"
 		parameters = open(mode+'_parameters.pickle','r')
 		W_emb = parameters[0]
 		word2ind = parameters[2]
-		testwords = ["Obama", "petition", "regard", "one", "housing", "owner"]
-		for testword in testwords:
-			length = (W_emb*W_emb).sum(1)**0.5
-			wi = word2ind[testword]
-			inputVector = W_emb[wi].reshape(1,-1)/length[wi]
-			sim = (inputVector@matrix.t())[0]/length
-			values, indices = sim.squeeze().topk(keyword_number)
+		# testwords = ["Obama", "petition", "regard", "one", "housing", "owner"]
+		# for testword in testwords:
+
+		length = (W_emb*W_emb).sum(1)**0.5
+		wi = word2ind[text_data]
+		inputVector = W_emb[wi].reshape(1,-1)/length[wi]
+		sim = (inputVector@matrix.t())[0]/length
+		values, indices = sim.squeeze().topk(keyword_number)
 		G = pgv.AGraph()
 		# centernode = testword
 		# nodelist=["white", "america", "white house", "eminem"]
