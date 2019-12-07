@@ -2,7 +2,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 import pydot
-# import pygraphviz as pgv
+import pygraphviz as pgv
 from IPython.display import Image
 import pickle
 
@@ -112,6 +112,7 @@ class Ui_Form(object):
 		# print(parameters)
 		W_emb = parameters[0]
 		word2ind = parameters[2]
+		ind2word = parameters[3]
 		# testwords = ["Obama", "petition", "regard", "one", "housing", "owner"]
 		# for testword in testwords:
 		centernode = text_data
@@ -124,7 +125,7 @@ class Ui_Form(object):
 		# centernode = testword
 		# nodelist=["white", "america", "white house", "eminem"]
 
-		
+		nodelist = []
 		print()
 		print("===============================================")
 		print("The most similar words to \"" + testword + "\"")
