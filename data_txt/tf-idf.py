@@ -23,41 +23,62 @@ snowball_stemmer = SnowballStemmer("english")
 
 query = query.split(' ')
 query = [snowball_stemmer.stem(i) for i in query]
-data = os.listdir(file_root+'/data') 
+data = os.listdir(file_root+'/data_txt3') 
 N = len(data) + 1
 data_dict = {}
 stat_dict ={}
 english = re.compile('[a-zA-Z]+')
 stop = set(stopwords.words('english'))
-#  --------------------------------------------------
+# #  --------------------------------------------------
 
-def tokenize(data):
-	# tokenize documents
-	for datum in data:
-		file_name = file_root+'/data/'+datum
-		with open(file_name,'rb') as f:
-			temp = [line.strip() for line in f]
-			result = []		
-			for sentence in temp:
-				sentence = str(sentence.lower())
-				tokens = nltk.word_tokenize(sentence)
-			tokens = [i for i in tokens if i not in stop and english.match(i)]
-			tokens = [i.replace("\\","") for i in tokens]
-			tokens = [snowball_stemmer.stem(i) for i in tokens]
-			text = nltk.Text(tokens)
-		word_dict = {}
-		stat_dict[datum] = text
-		fdst = FreqDist(stat_dict[datum])
-		vocab = fdst.most_common()
-		for word in vocab:
-			word_dict[word[0]] = word[1]
-		data_dict[datum] = word_dict
-	save_data = [data_dict, stat_dict]
-	with open('tf_idf_parameters.pickle', 'wb') as f:
-		pickle.dump(save_data,f)
-	exit()
+# def tokenize(data):
+# 	# tokenize documents
+# 	for datum in data:
+# 		file_name = file_root+'/data_txt3/'+datum
+# 		with open(file_name,'rb') as f:
+# 			temp = [line.strip() for line in f]
+# 			result = []		
+# 			tokenss = []
+# 			for sentence in temp:
+# 				sentence = str(sentence.lower())
+# 				tokens = nltk.word_tokenize(sentence)
+# 				tokenss = tokens
+# 			tokens = [i for i in tokenss if i not in stop and english.match(i)]
+# 			tokens = [i.replace("\\","") for i in tokens]
+# 			tokens = [snowball_stemmer.stem(i) for i in tokens]
+# 			text = nltk.Text(tokens)
+# 		word_dict = {}
+# 		stat_dict[datum] = text
+# 		fdst = FreqDist(stat_dict[datum])
+# 		vocab = fdst.most_common()
+# 		for word in vocab:
+# 			word_dict[word[0]] = word[1]
+# 		data_dict[datum] = word_dict
+# 	# print(data_dict)
+# 	saved_data = [data_dict, stat_dict]
+# 	with open('tf_idf_parameters.pickle', 'wb') as f:
+# 		pickle.dump(saved_data, f)
+# 	# tokenize query 
+# 	word_dict = {}
+# 	stat_dict['query.txt'] = query
+# 	fdst = FreqDist(stat_dict['query.txt'])
+# 	vocab = fdst.most_common()
+# 	for word in vocab:
+# 		word_dict[word[0]] = word[1]
+# 	data_dict['query.txt'] = word_dict
+# 	# print('Index Construction: ', data_dict)	
 
-	# tokenize query 
+# 	return data_dict
+
+
+def tf_idf(data_dict, query):
+
+	with open('tf_idf_parameters.pickle', 'rb') as f:
+		saved_data = pickle.load(f)
+
+	data_dict = saved_data[0]
+	stat_dict = saved_data[1]
+
 	word_dict = {}
 	stat_dict['query.txt'] = query
 	fdst = FreqDist(stat_dict['query.txt'])
@@ -65,10 +86,7 @@ def tokenize(data):
 	for word in vocab:
 		word_dict[word[0]] = word[1]
 	data_dict['query.txt'] = word_dict
-	return data_dict
 
-
-def tf_idf(data_dict, query):
 	inverted_word = []	
 	inverted_index = {} 
 	document_list = [] 
@@ -86,10 +104,20 @@ def tf_idf(data_dict, query):
 			if word in data_dict[document]:
 				temp.append(document)
 		inverted_index[word] = temp
+	# print('Inverted Index Construction: ', inverted_index)	
+
 	for word in query:
 		document_list.extend(inverted_index[word])
+	# adding query text as document
 	document_list = list(set(document_list))
+	document_list.remove('query.txt')
+	# document_list = [int(doc[:-4]) for doc in document_list]
+	# document_list.sort()
+	# document_list = [str(doc)+'.txt' for doc in document_list]	
 	document_noquery_list = document_list
+	document_list.append('query.txt')
+
+	# print('Document list with query: ', document_list)	
 
 	result_dict = {} 
 	result_df = pd.DataFrame()
@@ -136,7 +164,7 @@ def cos_similar(x,y):
 
 
 def main():
-	data_dict = tokenize(data)
+	# data_dict = tokenize(data)
 	tf_idf(data_dict, query)	
 
 if __name__ == "__main__":

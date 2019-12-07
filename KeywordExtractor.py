@@ -136,169 +136,62 @@ class Ui_Form(object):
 
 		elif self.TF_IDF.isChecked():
 			file_root = os.path.dirname(os.path.abspath(__file__))
-			with open(file_root+'\\data_txt\\query.txt', 'w') as f:
+			with open(file_root+'\\query.txt', 'w') as f:
 				f.write(text_data)
 
-			with open(file_root+'\\data_txt\\query.txt', 'r') as f:
+			with open(file_root+'\\query.txt', 'r') as f:
 				query = [line.strip() for line in f][0]
 
-			with open(file_root+'\\data_txt\\tf_idf_parameters.pickle', 'rb') as f:
+			with open(file_root+'\\tf_idf_parameters.pickle', 'rb') as f:
 				saved_data = pickle.load(f)
+			os.system('python tf_idf_1.py')			
 
-			data_dict = saved_data[0]
-			stat_dict = saved_data[1]
- 
-			word_dict = {}
-			stat_dict['query.txt'] = query
-			fdst = FreqDist(stat_dict['query.txt'])
-			vocab = fdst.most_common()
-			for word in vocab:
-				word_dict[word[0]] = word[1]
-			data_dict['query.txt'] = word_dict
+			with open(file_root+'\\final_result.pickle', 'rb') as f:
+				final_result = pickle.load(f)
 
-			inverted_word = []	
-			inverted_index = {} 
-			document_list = [] 
-			result_dict = {}	
-			total_result = {}
-			
-			for word in data_dict:
-				inverted_word.extend(list(data_dict[word]))
-			inverted_word = list(set(inverted_word))
-			inverted_word.sort()
-			print('sort inverted')
-
-			for word in inverted_word:
-				temp = []
-				for document in data_dict:
-					if word in data_dict[document]:
-						temp.append(document)
-				inverted_index[word] = temp
-			for word in query:
-				document_list.extend(inverted_index[word])
-			document_list = list(set(document_list))
-			document_noquery_list = document_list
-
-			result_dict = {} 
-			result_df = pd.DataFrame()
-
-			for doc in document_list:	
-				tf_idf_dict = {}
-				current_doc_dict = data_dict[doc]
-				temp_data_dict = {}
-				for word in inverted_word:
-					try:
-						tf = current_doc_dict[word]
-						df = len(inverted_index[word])
-						w = math.log(1+tf)*math.log10(N/df)
-					except:
-						w = 0
-					temp_data_dict[word] = w
-
-				tf_idf_dict[doc] = temp_data_dict
-				result_dict[doc] = tf_idf_dict.values()
-			print('calculating')
-
-			for i in result_dict.keys():
-				for j in result_dict[i]:
-					result_df['word'] = j
-					result_df[i] = j.values()
-			result_df = result_df.T
-			result_df.to_csv('result_df.csv')
-			result_np = result_df.as_matrix()
-			result_np = np.delete(result_np, 0,0)
-			y = result_np[len(result_np)-1]
-
-			final_dict = {}
-			for i in range(result_np.shape[0]-1):
-				normal_x = np.linalg.norm(np.square(result_np[i]))
-				normal_y = np.linalg.norm(np.square(y))
-				temp = np.dot(result_np[i],y)
-				score = temp /(normal_x*normal_y)
-				final_dict[document_noquery_list[i]] = score
-			final_result = list(reversed(sorted(final_dict.items(), key=operator.itemgetter(1))))
-			final_result = final_result[0:keyword_number]
-			final_result = [i[0] for i in final_result]
+			final_result = final_result[0:int(keyword_number)]
 			for item in final_result:
-				nodelist.append(item)
+				nodelist.append(item[:-4])
+			print('its nodelist')
+			print(nodelist)
 
-		# G = pgv.AGraph()
+		G = pgv.AGraph(bgcolor="#EEEEEE")
 
-		# G.add_nodes_from(nodelist)
-		# G.add_node(centernode) # adds center node
+		G.add_nodes_from(nodelist)
+		G.add_node(centernode) # adds center node
 
-		# # Setting node attributes that are common for all nodes 
-		# G.node_attr['style']='filled'
-		# G.node_attr['color']='#FFFFFF'
-		# G.node_attr['fontcolor']= 'red'
-		# G.edge_attr['style'] = 'invis'
+		# Setting node attributes that are common for all nodes
+		G.node_attr['style']='filled'
+		G.node_attr['color']='#FFFFFF'
+		G.node_attr['fontcolor']= 'black'
+		G.edge_attr['style'] = 'invis'
 
-		# # similarity dictionary
-		# sim_dict = {}
-		# for i, item in enumerate(nodelist):
-		# 	sim_dict[item] = 2*len(nodelist)-2*i
-		# print(sim_dict)
-		# # Creating and setting node attributes that vary for each node (using a for loop)
-		# center = G.get_node(centernode)
-		# center.attr['style']='filled'
-		# center.attr['shape']='circle'
-		# center.attr['color']='lightgray'
-		# center.attr['fontsize']='50'
-		# center.attr['fontcolor']='black'
+		# similarity dictionary
+		sim_dict = {}
+		for i, item in enumerate(nodelist):
+			sim_dict[item] = 2*len(nodelist)-2*i
+		print(sim_dict)
+		# Creating and setting node attributes that vary for each node (using a for loop)
+		center = G.get_node(centernode)
+		center.attr['style']='filled'
+		center.attr['shape']='circle'
+		center.attr['color']='transparent'
+		center.attr['fontsize']='50'
+		center.attr['fontcolor']='black'
+		center.attr['width']='4'
+		center.attr['height']='4'
 
-		# for i in nodelist:
-		# 	G.add_edge(centernode,i)
-		# 	n = G.get_node(i)
-		# 	n.attr['fontcolor']="#%2x0000"%(sim_dict[i]) # random?
-		# 	n.attr['height']="%s"%(sim_dict[i]*0.3)
-		# 	n.attr['fontsize']="%s"%(sim_dict[i]*8 + 30) # 관련성에 비례하게
+		
+		for i in nodelist:
+			G.add_edge(center,i)
+			n = G.get_node(i)
+			n.attr['fontcolor']="#%1x0000"%(sim_dict[i]) # random?
+			n.attr['height']="%s"%(sim_dict[i]*0.3)
+			n.attr['fontsize']="%s"%(sim_dict[i]*20 + 100) # 관련성에 비례하게
+			n.attr['color'] = 'transparent'
+		G.draw('viz.png',prog="circo") # This creates a .png file in the local directory. Displayed below.
 
-		# G.draw('viz.png',prog="circo") # This creates a .png file in the local directory. Displayed below.
-
-		# Image('viz.png', width=700) # The Graph visualization we created above.
-	
-		self.label.setParent(None)
-		self.pixmap = QPixmap('viz.png')
-		self.label.resize(700, 500)
-		self.pixmap = self.pixmap.scaled(700, 500)
-		self.label.setPixmap(self.pixmap)
-
-		self.resultLayout.addWidget(self.label, 0, QtCore.Qt.AlignHCenter)
-
-
-		# G = pgv.AGraph()
-		# centernode = 'chogook'
-		# nodelist=['chomin','president moon','Trump','controversy','law','professor','politics']
-		# G.add_nodes_from(nodelist)
-		# G.add_node(centernode) # adds center node
-
-		# # Setting node attributes that are common for all nodes 
-		# G.node_attr['style']='filled'
-		# G.node_attr['color']='#FFFFFF'
-		# G.node_attr['fontcolor']= 'red'
-		# G.edge_attr['style'] = 'invis'
-
-		# # similarity dictionary
-		# sim_dict = {'chomin':9,'president moon':5,'Trump':2,'controversy':8,'law':1,'professor':10,'politics':7}
-
-		# # Creating and setting node attributes that vary for each node (using a for loop)
-		# center = G.get_node(centernode)
-		# center.attr['style']='filled'
-		# center.attr['shape']='circle'
-		# center.attr['color']='lightgray'
-		# center.attr['fontsize']='50'
-		# center.attr['fontcolor']='black'
-
-		# for i in nodelist:
-		#     G.add_edge(centernode,i)
-		#     n = G.get_node(i)
-		#     n.attr['fontcolor']="#%2x0000"%(sim_dict[i]) # random?
-		#     n.attr['height']="%s"%(sim_dict[i]*0.3)
-		#     n.attr['fontsize']="%s"%(sim_dict[i]*8 + 30) # 관련성에 비례하게
-
-		# G.draw('viz.png',prog="circo") # This creates a .png file in the local directory. Displayed below.
-
-		# Image('viz.png', width=700) # The Graph visualization we created above.
+		Image('viz.png', width=700) # The Graph visualization we created above.
 
 	def reset_button_clicked(self):
 		self.search_line.setText("")
