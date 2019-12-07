@@ -4,6 +4,7 @@ from PyQt5.QtWidgets import *
 import pydot
 # import pygraphviz as pgv
 from IPython.display import Image
+import pickle
 
 
 class Ui_Form(object):
@@ -106,62 +107,64 @@ class Ui_Form(object):
 		# for tw in testwords:
 		#     sim(tw,word2ind,ind2word,W_emb)
 		# mode = "SG"
-		parameters = open(mode+'_parameters.pickle','r')
+		with open(mode+'_parameters.pickle','rb') as f:
+			parameters = pickle.load(f)
+		print(parameters)
 		W_emb = parameters[0]
 		word2ind = parameters[2]
 		# testwords = ["Obama", "petition", "regard", "one", "housing", "owner"]
 		# for testword in testwords:
 
-		length = (W_emb*W_emb).sum(1)**0.5
-		wi = word2ind[text_data]
-		inputVector = W_emb[wi].reshape(1,-1)/length[wi]
-		sim = (inputVector@matrix.t())[0]/length
-		values, indices = sim.squeeze().topk(keyword_number)
-		G = pgv.AGraph()
-		# centernode = testword
-		# nodelist=["white", "america", "white house", "eminem"]
+		# length = (W_emb*W_emb).sum(1)**0.5
+		# wi = word2ind[text_data]
+		# inputVector = W_emb[wi].reshape(1,-1)/length[wi]
+		# sim = (inputVector@matrix.t())[0]/length
+		# values, indices = sim.squeeze().topk(keyword_number)
+		# G = pgv.AGraph()
+		# # centernode = testword
+		# # nodelist=["white", "america", "white house", "eminem"]
 
 		
-		print()
-		print("===============================================")
-		print("The most similar words to \"" + testword + "\"")
-		for ind, val in zip(indices,values):
-			nodelist.append(ind2word[ind.item()])
-		print(ind2word[ind.item()]+":%.3f"%(val,))
-		print("===============================================")
-		print()
+		# print()
+		# print("===============================================")
+		# print("The most similar words to \"" + testword + "\"")
+		# for ind, val in zip(indices,values):
+		# 	nodelist.append(ind2word[ind.item()])
+		# print(ind2word[ind.item()]+":%.3f"%(val,))
+		# print("===============================================")
+		# print()
 
 
-		G.add_nodes_from(nodelist)
-		G.add_node(centernode) # adds center node
+		# G.add_nodes_from(nodelist)
+		# G.add_node(centernode) # adds center node
 
-		# Setting node attributes that are common for all nodes 
-		G.node_attr['style']='filled'
-		G.node_attr['color']='#FFFFFF'
-		G.node_attr['fontcolor']= 'red'
-		G.edge_attr['style'] = 'invis'
+		# # Setting node attributes that are common for all nodes 
+		# G.node_attr['style']='filled'
+		# G.node_attr['color']='#FFFFFF'
+		# G.node_attr['fontcolor']= 'red'
+		# G.edge_attr['style'] = 'invis'
 
-		# similarity dictionary
-		sim_dict = {}
-		for i, item in enumerate(nodelist):
-			sim_dict[item] = 2*len(nodelist)-2*i
-		print(sim_dict)
-		# Creating and setting node attributes that vary for each node (using a for loop)
-		center = G.get_node(centernode)
-		center.attr['style']='filled'
-		center.attr['shape']='circle'
-		center.attr['color']='lightgray'
-		center.attr['fontsize']='50'
-		center.attr['fontcolor']='black'
+		# # similarity dictionary
+		# sim_dict = {}
+		# for i, item in enumerate(nodelist):
+		# 	sim_dict[item] = 2*len(nodelist)-2*i
+		# print(sim_dict)
+		# # Creating and setting node attributes that vary for each node (using a for loop)
+		# center = G.get_node(centernode)
+		# center.attr['style']='filled'
+		# center.attr['shape']='circle'
+		# center.attr['color']='lightgray'
+		# center.attr['fontsize']='50'
+		# center.attr['fontcolor']='black'
 
-		for i in nodelist:
-			G.add_edge(centernode,i)
-			n = G.get_node(i)
-			n.attr['fontcolor']="#%2x0000"%(sim_dict[i]) # random?
-			n.attr['height']="%s"%(sim_dict[i]*0.3)
-			n.attr['fontsize']="%s"%(sim_dict[i]*8 + 30) # 관련성에 비례하게
+		# for i in nodelist:
+		# 	G.add_edge(centernode,i)
+		# 	n = G.get_node(i)
+		# 	n.attr['fontcolor']="#%2x0000"%(sim_dict[i]) # random?
+		# 	n.attr['height']="%s"%(sim_dict[i]*0.3)
+		# 	n.attr['fontsize']="%s"%(sim_dict[i]*8 + 30) # 관련성에 비례하게
 
-		G.draw('viz.png',prog="circo") # This creates a .png file in the local directory. Displayed below.
+		# G.draw('viz.png',prog="circo") # This creates a .png file in the local directory. Displayed below.
 
 		Image('viz.png', width=700) # The Graph visualization we created above.
 	
