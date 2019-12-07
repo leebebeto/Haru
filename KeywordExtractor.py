@@ -95,9 +95,9 @@ class Ui_Form(object):
 
 		# if self.TF_IDF.isClicked():
 		# 	mode = "TF-IDF"
-		if self.SG.isClicked():
+		if self.SG.isChecked():
 			mode = "SG"
-		elif self.CBOW.isClicked():
+		elif self.CBOW.isChecked():
 			mode = "CBOW"
 		else:
 			print("wrong mode")
