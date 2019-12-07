@@ -2,10 +2,21 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 import pydot
-# import pygraphviz as pgv
+import pygraphviz as pgv
 from IPython.display import Image
 import pickle
-
+from nltk import FreqDist
+from nltk.corpus import stopwords
+from nltk.stem.porter import PorterStemmer
+from nltk.stem.lancaster import LancasterStemmer
+from nltk.stem import SnowballStemmer
+import os
+import re
+import pandas as pd 
+import numpy as np
+import math
+import operator
+import nltk
 
 class Ui_Form(object):
 	def setupUi(self, Form):
@@ -90,55 +101,127 @@ class Ui_Form(object):
 		print(self.CBOW.isChecked())
 		print(self.TF_IDF.isChecked())
 		print(self.text_history)
-		testword = "obama"
 
 		self.label_history.setText(self.text_history)
-
-		# if self.TF_IDF.isClicked():
-		# 	mode = "TF-IDF"
-		if self.SG.isChecked():
-			mode = "SG"
-		elif self.CBOW.isChecked():
-			mode = "CBOW"
-		else:
-			print("wrong mode")
-		# W = [W_emb, W_out]
-		# testwords = ["Obama", "senator", "white", "house", "battle"]
-		# for tw in testwords:
-		#     sim(tw,word2ind,ind2word,W_emb)
-		# mode = "SG"
-		with open(mode+'_parameters.pickle','rb') as f:
-			parameters = pickle.load(f)
-		# print(parameters)
-		W_emb = parameters[0]
-		word2ind = parameters[2]
-		ind2word = parameters[3]
-		# testwords = ["Obama", "petition", "regard", "one", "housing", "owner"]
-		# for testword in testwords:
-		centernode = text_data
-		length = (W_emb*W_emb).sum(1)**0.5
-		wi = word2ind[text_data]
-		inputVector = W_emb[wi].reshape(1,-1)/length[wi]
-		sim = (inputVector@W_emb.t())[0]/length
-		values, indices = sim.squeeze().topk(30)
-		# centernode = testword
-		# nodelist=["white", "america", "white house", "eminem"]
-
 		nodelist = []
-		print()
-		print("===============================================")
-		print("The most similar words to \"" + testword + "\"")
-		iteration = 0
-		for ind, val in zip(indices,values):
-			if len(ind2word[ind.item()]) > 5:
-				nodelist.append(ind2word[ind.item()])
-				iteration += 1
-			if iteration == int(keyword_number):
-				break
-		print(ind2word[ind.item()]+":%.3f"%(val,))
-		print("===============================================")
-		print()
-		print(nodelist)
+
+		if self.SG.isChecked() or self.CBOW.isChecked():
+			if self.SG.isChecked():
+				mode = "SG"
+			elif self.CBOW.isChecked():
+				mode = "CBOW"
+			else:
+				print("wrong mode")
+
+			with open(mode+'_parameters.pickle','rb') as f:
+				parameters = pickle.load(f)
+			W_emb = parameters[0]
+			word2ind = parameters[2]
+			ind2word = parameters[3]
+
+			centernode = text_data
+			length = (W_emb*W_emb).sum(1)**0.5
+			wi = word2ind[text_data]
+			inputVector = W_emb[wi].reshape(1,-1)/length[wi]
+			sim = (inputVector@W_emb.t())[0]/length
+			values, indices = sim.squeeze().topk(80)
+
+			iteration = 0
+			for ind, val in zip(indices,values):
+				if len(ind2word[ind.item()]) > 5:
+					nodelist.append(ind2word[ind.item()])
+					iteration += 1
+				if iteration == int(keyword_number):
+					break
+
+		elif self.TF_IDF.isChecked():
+			file_root = os.path.dirname(os.path.abspath(__file__))
+			with open(file_root+'\\data_txt\\query.txt', 'w') as f:
+				f.write(text_data)
+
+			with open(file_root+'\\data_txt\\query.txt', 'r') as f:
+				query = [line.strip() for line in f][0]
+
+			with open(file_root+'\\data_txt\\tf_idf_parameters.pickle', 'rb') as f:
+				saved_data = pickle.load(f)
+
+			data_dict = saved_data[0]
+			stat_dict = saved_data[1]
+ 
+			word_dict = {}
+			stat_dict['query.txt'] = query
+			fdst = FreqDist(stat_dict['query.txt'])
+			vocab = fdst.most_common()
+			for word in vocab:
+				word_dict[word[0]] = word[1]
+			data_dict['query.txt'] = word_dict
+
+			inverted_word = []	
+			inverted_index = {} 
+			document_list = [] 
+			result_dict = {}	
+			total_result = {}
+			
+			for word in data_dict:
+				inverted_word.extend(list(data_dict[word]))
+			inverted_word = list(set(inverted_word))
+			inverted_word.sort()
+			print('sort inverted')
+
+			for word in inverted_word:
+				temp = []
+				for document in data_dict:
+					if word in data_dict[document]:
+						temp.append(document)
+				inverted_index[word] = temp
+			for word in query:
+				document_list.extend(inverted_index[word])
+			document_list = list(set(document_list))
+			document_noquery_list = document_list
+
+			result_dict = {} 
+			result_df = pd.DataFrame()
+
+			for doc in document_list:	
+				tf_idf_dict = {}
+				current_doc_dict = data_dict[doc]
+				temp_data_dict = {}
+				for word in inverted_word:
+					try:
+						tf = current_doc_dict[word]
+						df = len(inverted_index[word])
+						w = math.log(1+tf)*math.log10(N/df)
+					except:
+						w = 0
+					temp_data_dict[word] = w
+
+				tf_idf_dict[doc] = temp_data_dict
+				result_dict[doc] = tf_idf_dict.values()
+			print('calculating')
+
+			for i in result_dict.keys():
+				for j in result_dict[i]:
+					result_df['word'] = j
+					result_df[i] = j.values()
+			result_df = result_df.T
+			result_df.to_csv('result_df.csv')
+			result_np = result_df.as_matrix()
+			result_np = np.delete(result_np, 0,0)
+			y = result_np[len(result_np)-1]
+
+			final_dict = {}
+			for i in range(result_np.shape[0]-1):
+				normal_x = np.linalg.norm(np.square(result_np[i]))
+				normal_y = np.linalg.norm(np.square(y))
+				temp = np.dot(result_np[i],y)
+				score = temp /(normal_x*normal_y)
+				final_dict[document_noquery_list[i]] = score
+			final_result = list(reversed(sorted(final_dict.items(), key=operator.itemgetter(1))))
+			final_result = final_result[0:keyword_number]
+			final_result = [i[0] for i in final_result]
+			for item in final_result:
+				nodelist.append(item)
+
 		# G = pgv.AGraph()
 
 		# G.add_nodes_from(nodelist)

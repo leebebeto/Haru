@@ -10,6 +10,7 @@ from nltk.stem.lancaster import LancasterStemmer
 from nltk.stem import SnowballStemmer
 import math
 import operator
+import pickle
 
 # ------------- basic setting -----------------------
 file_root = os.path.dirname(os.path.abspath(__file__))
@@ -51,6 +52,10 @@ def tokenize(data):
 		for word in vocab:
 			word_dict[word[0]] = word[1]
 		data_dict[datum] = word_dict
+	save_data = [data_dict, stat_dict]
+	with open('tf_idf_parameters.pickle', 'wb') as f:
+		pickle.dump(save_data,f)
+	exit()
 
 	# tokenize query 
 	word_dict = {}
